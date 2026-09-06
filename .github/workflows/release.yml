@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -64,6 +66,7 @@ jobs:
           }
           $signature = (Get-Content $sig.FullName -Raw).Trim()
 
+          # 从 CHANGELOG.md 提取对应版本的更新内容
           $notes = ""
           if (Test-Path "CHANGELOG.md") {
             $changelog = Get-Content "CHANGELOG.md" -Raw -Encoding utf8
@@ -75,6 +78,7 @@ jobs:
           }
           if (-not $notes) { $notes = "PlainWiFi $ver（CHANGELOG.md 中未找到对应版本记录）" }
 
+          # Gitee 链接指向 Gitee Release 附件地址
           $manifest = [ordered]@{
             version   = $ver
             notes     = $notes
@@ -88,6 +92,7 @@ jobs:
           }
           $manifest | ConvertTo-Json -Depth 5 | Set-Content updater.json -Encoding utf8
 
+          # GitHub 链接指向 GitHub Release 附件地址
           $manifest.platforms."windows-x86_64".url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/PlainWiFi_${ver}_x64-setup.exe"
           $manifest | ConvertTo-Json -Depth 5 | Set-Content updater-github.json -Encoding utf8
 
@@ -128,7 +133,7 @@ jobs:
           $giteeUrl = "https://oauth2:${env:GITEE_TOKEN}@gitee.com/$owner/$repo.git"
           git push $giteeUrl $tag -f
 
-          # 3. 检查并创建 Gitee Release
+          # 3. 检查并创建 Gitee Release（补全 target_commitish 参数）
           $headers = @{ "User-Agent" = "PowerShell" }
           $releasesUrl = "https://gitee.com/api/v5/repos/$owner/$repo/releases?access_token=${env:GITEE_TOKEN}"
           $existingReleases = Invoke-RestMethod -Uri $releasesUrl -Method Get -Headers $headers
@@ -137,10 +142,11 @@ jobs:
           if (-not $release) {
             $createReleaseUrl = "https://gitee.com/api/v5/repos/$owner/$repo/releases"
             $body = @{
-              access_token = $env:GITEE_TOKEN
-              tag_name     = $tag
-              name         = "PlainWiFi $tag"
-              body         = $env:RELEASE_NOTES
+              access_token     = $env:GITEE_TOKEN
+              tag_name         = $tag
+              name             = "PlainWiFi $tag"
+              body             = $env:RELEASE_NOTES
+              target_commitish = "${{ github.sha }}"
             }
             $release = Invoke-RestMethod -Uri $createReleaseUrl -Method Post -Body $body
           }
