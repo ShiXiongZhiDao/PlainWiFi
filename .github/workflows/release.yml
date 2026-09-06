@@ -58,13 +58,34 @@ jobs:
         run: |
           $ver = "${{ github.ref_name }}".TrimStart("v")
 
-          # 递归搜索 bundle 目录下的 .sig 签名文件
-          $sig = Get-ChildItem -Path . -Recurse -Filter "*.sig" | Where-Object { $_.FullName -like "*bundle*" } | Select-Object -First 1
-          if (-not $sig) {
-            Write-Host "::error::未能找到 .sig 签名文件！"
+          # 定位本次分发的 NSIS 安装包，签名严格取其同名 .sig。
+          # 禁止通配 *.sig + First 1：bundle.targets 含 nsis 与 msi 时会命中 .msi.sig，
+          # 清单 signature 与 url 指向的产物不配对，客户端下载完在验签阶段失败（v1.0.4/v1.0.5 事故）。
+          $exe = Get-ChildItem -Path . -Recurse -Filter "PlainWiFi_${ver}_x64-setup.exe" |
+            Where-Object { $_.FullName -like "*bundle*" } | Select-Object -First 1
+          if (-not $exe) {
+            Write-Host "::error::未能找到 NSIS 安装包 PlainWiFi_${ver}_x64-setup.exe！"
             exit 1
           }
-          $signature = (Get-Content $sig.FullName -Raw).Trim()
+          $sigPath = "$($exe.FullName).sig"
+          if (-not (Test-Path $sigPath)) {
+            Write-Host "::error::未能找到与安装包配对的签名文件 $($exe.Name).sig！"
+            exit 1
+          }
+          $signature = (Get-Content $sigPath -Raw).Trim()
+
+          # 硬校验：签名 trusted comment 里的 file: 必须就是 url 指向的那个文件名，否则拒绝发布清单
+          $sigText = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($signature))
+          $signedFile = ((($sigText -split "`n") | Where-Object { $_ -match "file:" } | Select-Object -First 1) -split "`t")[-1] -replace "file:", ""
+          $signedFile = $signedFile.Trim()
+          if ($signedFile -ne $exe.Name) {
+            Write-Host "::error::签名对应 $signedFile 与 url 指向的 $($exe.Name) 不配对，拒绝发布升级清单！"
+            exit 1
+          }
+          Write-Host "updater 分发产物：$($exe.Name)（$([math]::Round($exe.Length / 1MB, 2)) MB），签名对应文件：$signedFile"
+
+          # 供后续 Gitee 上传步骤复用同一份产物，避免二次通配搜索取到不同文件
+          "UPDATER_EXE_PATH=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           # 从 CHANGELOG.md 提取对应版本的更新内容
           $notes = ""
@@ -117,17 +138,16 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           $ErrorActionPreference = "Stop"
-          $ver   = "${{ github.ref_name }}".TrimStart("v")
           $tag   = "${{ github.ref_name }}"
           $owner = "ShiXiongZhiDao"
           $repo  = "PlainWiFi"
 
-          # 1. 查找生成的安装包
-          $exe   = Get-ChildItem -Path . -Recurse -Filter "*.exe" | Where-Object { $_.FullName -like "*bundle*" } | Select-Object -First 1
-          if (-not $exe) {
-            Write-Host "::error::未能找到安装包文件！"
+          # 1. 复用 Assemble 步骤已解析、且签名已核对配对的那份安装包
+          if (-not $env:UPDATER_EXE_PATH -or -not (Test-Path $env:UPDATER_EXE_PATH)) {
+            Write-Host "::error::未能读取上一步解析的安装包路径 UPDATER_EXE_PATH，中止上传！"
             exit 1
           }
+          $exe = Get-Item $env:UPDATER_EXE_PATH
 
           # 2. 推送 Tag 到 Gitee
           $giteeUrl = "https://oauth2:${env:GITEE_TOKEN}@gitee.com/$owner/$repo.git"
@@ -155,7 +175,7 @@ jobs:
           $uploadUrl = "https://gitee.com/api/v5/repos/$owner/$repo/releases/$($release.id)/attach_files"
           curl.exe -X POST $uploadUrl `
             -F "access_token=${env:GITEE_TOKEN}" `
-            -F "file=@$($exe.FullName);filename=PlainWiFi_${ver}_x64-setup.exe"
+            -F "file=@$($exe.FullName);filename=$($exe.Name)"
 
       - name: Sync updater.json to Gitee updates branch
         shell: pwsh

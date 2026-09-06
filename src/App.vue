@@ -460,6 +460,12 @@
             </div>
             <p class="mt-3 text-xs font-bold text-black/60 dark:text-white/60">{{ t('updateFooter') }}</p>
           </div>
+
+          <!-- 已发现新版的更新说明：即使选了「稍后再说」也能在这里回看 -->
+          <div v-if="newVersion && updateNotesHtml" class="border-[3px] border-black dark:border-brut-white p-4 bg-brut-white dark:bg-brut-dark-card shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#fff]">
+            <div class="text-xs font-black uppercase tracking-widest text-black/70 dark:text-white/70 mb-2">{{ t('updateNotesForVersion') }} v{{ newVersion }}</div>
+            <div :class="NOTES_TAB_CLS" v-html="updateNotesHtml" @click="onNotesClick"></div>
+          </div>
         </div>
 
         <!-- Donate Tab -->
@@ -611,7 +617,8 @@
         <!-- 待确认：展示更新内容 + 更新/跳过/取消 -->
         <template v-if="updateState === 'available'">
           <div class="text-xs font-black uppercase tracking-widest text-black/60 dark:text-white/60 mb-1">{{ t('updateNotesTitle') }}</div>
-          <div class="max-h-48 overflow-y-auto border-[3px] border-black dark:border-brut-white p-3 mb-5 bg-brut-gray dark:bg-brut-dark-bg text-sm font-bold text-black dark:text-white whitespace-pre-wrap break-words">{{ updateNotes || t('updateNotesEmpty') }}</div>
+          <div v-if="updateNotesHtml" :class="NOTES_BOX_CLS" v-html="updateNotesHtml" @click="onNotesClick"></div>
+          <div v-else :class="NOTES_BOX_CLS">{{ t('updateNotesEmpty') }}</div>
           <div class="flex flex-wrap gap-3">
             <button
                 @click="acceptUpdate"
@@ -664,6 +671,10 @@
         <!-- 失败：重试 / 下载页 -->
         <template v-else>
           <div class="mb-4 p-3 bg-brut-magenta border-[3px] border-black text-black font-black uppercase text-sm shadow-[3px_3px_0_#000]">{{ t('updateError') }}</div>
+          <div
+              v-if="updateErrorDetail"
+              class="-mt-2 mb-4 p-2 border-[3px] border-black dark:border-brut-white bg-brut-white dark:bg-brut-dark-bg text-[11px] font-bold text-black dark:text-white break-words"
+          >{{ t('updateErrorDetail') }}: {{ updateErrorDetail }}</div>
           <div class="flex flex-wrap gap-3">
             <button
                 v-if="pendingUpdate"
@@ -775,12 +786,14 @@ const translations: Record<Locale, Record<string, string>> = {
     updateUpToDate: '已是最新版本',
     updateAvailable: '发现新版本',
     updateError: '升级失败，请检查网络或重试',
+    updateErrorDetail: '错误详情',
     updateFooter: '启动时后台检查；发现新版弹窗展示更新内容，由你选择立即更新、跳过此版本或稍后再说',
     updateInstalled: '新版本已安装，重启生效',
     updateRestartBtn: '立即重启',
     updateDownloading: '正在下载安装',
     updateRelaunchFailed: '重启失败，请手动重启应用',
     updateNotesTitle: '更新内容',
+    updateNotesForVersion: '新版本说明',
     updateBtnNow: '立即更新',
     updateBtnSkip: '跳过此版本',
     updateBtnLater: '稍后再说',
@@ -871,12 +884,14 @@ const translations: Record<Locale, Record<string, string>> = {
     updateUpToDate: 'Already up to date',
     updateAvailable: 'Update available',
     updateError: 'Update failed. Check your network and retry.',
+    updateErrorDetail: 'Error detail',
     updateFooter: 'Checked silently at startup; when a new version is found a dialog shows the release notes and you choose Update now / Skip / Later',
     updateInstalled: 'Update installed — restart to apply',
     updateRestartBtn: 'Restart Now',
     updateDownloading: 'Downloading & installing',
     updateRelaunchFailed: 'Relaunch failed, please restart manually',
     updateNotesTitle: 'Release Notes',
+    updateNotesForVersion: 'What’s new in',
     updateBtnNow: 'Update Now',
     updateBtnSkip: 'Skip This Version',
     updateBtnLater: 'Later',
@@ -914,11 +929,20 @@ const UPDATE_SKIPPED_KEY = 'updateSkippedVersion'
 type UpdateState = 'idle' | 'available' | 'downloading' | 'ready' | 'error'
 const updateState = ref<UpdateState>('idle')
 const updateProgress = ref(0)
+// updater 插件真实报错：生产包无 devtools，错误态需在弹窗内直出，避免一律误判为网络问题
+const updateErrorDetail = ref('')
 const newVersion = ref('')
 const updateNotes = ref('')
 const updateDialogOpen = ref(false)
 const skippedVersion = ref(localStorage.getItem(UPDATE_SKIPPED_KEY) ?? '')
 let pendingUpdate: Update | null = null
+
+// 统一提取错误文本：Tauri 插件 reject 的是字符串，异常对象则取 message
+function errText(err: unknown): string {
+  if (typeof err === 'string') return err
+  if (err instanceof Error) return err.message
+  return String(err)
+}
 
 // 从 updater 协议 body 中提取更新说明（当前版本为 string；兼容旧版按平台对象形式）
 function extractUpdateNotes(u: Update): string {
@@ -931,9 +955,95 @@ function extractUpdateNotes(u: Update): string {
   return ''
 }
 
+// ============ 更新说明的 Markdown 渲染（零依赖子集，见 ADR-0002 轻量取向） ============
+// 安全前提：升级清单本身不带签名（只有更新包验签）且 CSP 未开启，属远程不可信输入，
+// 因此先把整段文本转义成纯文本，再只生成下列受控标签；链接仅放行 http(s)，点击走系统浏览器。
+const NOTES_BOX_CLS = 'max-h-48 overflow-y-auto border-[3px] border-black dark:border-brut-white p-3 mb-5 bg-brut-gray dark:bg-brut-dark-bg text-sm font-bold text-black dark:text-white break-words'
+const NOTES_TAB_CLS = 'max-h-56 overflow-y-auto border-[3px] border-black dark:border-brut-white p-3 bg-brut-gray dark:bg-brut-dark-bg text-sm font-bold text-black dark:text-white break-words'
+const MD_H_CLS_BIG = 'mt-2 mb-1 text-[15px] font-black uppercase tracking-tight first:mt-0'
+const MD_H_CLS_SMALL = 'mt-2 mb-1 text-[13px] font-black uppercase tracking-tight first:mt-0'
+const MD_P_CLS = 'my-1 leading-snug'
+const MD_CODE_CLS = 'bg-brut-white dark:bg-brut-dark-card border-2 border-black dark:border-brut-white px-1 font-mono text-[12px]'
+const MD_LINK_CLS = 'underline decoration-2 underline-offset-2 break-all hover:text-brut-magenta'
+// 行内代码占位符：避免代码片段内的 ** _ [] 等被继续解析
+const MD_CODE_MARK = '\u0000'
+
+function escapeHtml(s: string): string {
+  return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+}
+
+function markdownLink(rawHref: string, label: string): string {
+  const href = rawHref.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+  // 只放行 http/https；javascript:、data: 等一律降级为纯文本
+  if (!/^https?:\/\//i.test(href)) return label
+  return `<a href="${escapeHtml(href)}" class="${MD_LINK_CLS}">${label}</a>`
+}
+
+function inlineMarkdown(text: string): string {
+  const codes: string[] = []
+  let out = text.replace(/`([^`\n]+)`/g, (_m, code: string) => {
+    codes.push(code)
+    return `${MD_CODE_MARK}${codes.length - 1}${MD_CODE_MARK}`
+  })
+  out = out
+      .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, label: string, href: string) => markdownLink(href, label))
+      .replace(/(^|[\s(])(https?:\/\/[^\s<)'"]+)/g, (_m, pre: string, url: string) => pre + markdownLink(url, url))
+  return out.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => `<code class="${MD_CODE_CLS}">${codes[Number(i)] ?? ''}</code>`)
+}
+
+function renderReleaseNotes(md: string): string {
+  const out: string[] = []
+  let list: 'ul' | 'ol' | null = null
+  const closeList = () => { if (list) { out.push(`</${list}>`); list = null } }
+  const openList = (type: 'ul' | 'ol') => {
+    if (list !== type) {
+      closeList()
+      out.push(`<${type} class="my-1 pl-5 space-y-0.5 leading-snug ${type === 'ul' ? 'list-disc' : 'list-decimal'}">`)
+      list = type
+    }
+  }
+  for (const rawLine of md.replace(/\r\n?/g, '\n').split('\n')) {
+    const line = escapeHtml(rawLine.replace(/\u0000/g, '').trimEnd())
+    if (!line.trim()) { closeList(); continue }
+    const heading = line.match(/^(#{1,6})\s+(.*)$/)
+    if (heading) {
+      closeList()
+      out.push(`<p class="${heading[1].length <= 2 ? MD_H_CLS_BIG : MD_H_CLS_SMALL}">${inlineMarkdown(heading[2])}</p>`)
+      continue
+    }
+    const bullet = line.match(/^\s*[-*+]\s+(.*)$/)
+    if (bullet) { openList('ul'); out.push(`<li>${inlineMarkdown(bullet[1])}</li>`); continue }
+    const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/)
+    if (numbered) { openList('ol'); out.push(`<li>${inlineMarkdown(numbered[1])}</li>`); continue }
+    closeList()
+    out.push(`<p class="${MD_P_CLS}">${inlineMarkdown(line.trim())}</p>`)
+  }
+  closeList()
+  return out.join('')
+}
+
+const updateNotesHtml = computed(() => (updateNotes.value ? renderReleaseNotes(updateNotes.value) : ''))
+
+// 清单里的链接不得在 webview 内导航，统一交系统浏览器打开
+function onNotesClick(e: MouseEvent) {
+  const anchor = (e.target as HTMLElement | null)?.closest?.('a') as HTMLAnchorElement | null
+  if (!anchor) return
+  e.preventDefault()
+  const href = anchor.getAttribute('href') ?? ''
+  if (/^https?:\/\//i.test(href)) void openExternal(href)
+}
+
 // 检查更新：启动时 silent=true（失败不打扰、被跳过的版本不再弹窗）；手动检查永远弹窗/提示
 async function runUpdateCheck(silent: boolean) {
   if (updateState.value === 'downloading') return
+  updateErrorDetail.value = ''
   try {
     const update = await check()
     if (!update || !update.available) {
@@ -948,6 +1058,7 @@ async function runUpdateCheck(silent: boolean) {
     updateDialogOpen.value = true
   } catch (err) {
     console.error('updater check failed:', err)
+    updateErrorDetail.value = errText(err)
     updateState.value = 'error'
     updateDialogOpen.value = true
     if (!silent) showNotification(t('updateError'), 'error')
@@ -959,6 +1070,7 @@ async function acceptUpdate() {
   if (!pendingUpdate) return
   updateState.value = 'downloading'
   updateProgress.value = 0
+  updateErrorDetail.value = ''
   let downloaded = 0
   let total = 0
   try {
@@ -980,6 +1092,7 @@ async function acceptUpdate() {
     showNotification(t('updateInstalled'), 'success')
   } catch (err) {
     console.error('install failed:', err)
+    updateErrorDetail.value = errText(err)
     updateState.value = 'error'
     showNotification(t('updateError'), 'error')
   }

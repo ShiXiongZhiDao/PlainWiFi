@@ -24,7 +24,7 @@
 - **🌓 Dark / Light Theme**: Visual switcher in Settings, preference auto-saved; a "Follow system" option tracks your OS appearance in real time
 - **🌐 Bilingual**: Auto-detects your system language; switch anytime in Settings
 - **🔄 System Tray**: Keeps running in the tray after closing the window; right-click for quick refresh/restore
-- **🚀 In-App Update**: New versions are checked silently at startup; when one is found, a dialog shows the version and release notes and YOU choose Update now / Skip this version / Later. Update packages are minisign signature-verified against tampering; restart with one click after install
+- **🚀 In-App Update**: New versions are checked silently at startup; when one is found, a dialog shows the version and release notes and YOU choose Update now / Skip this version / Later. Update packages are minisign signature-verified against tampering; after you confirm, the update downloads, installs and relaunches the app automatically
 
 ## 🔒 Privacy & Security
 
