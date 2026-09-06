@@ -103,9 +103,21 @@ A：哪里都没有。关闭应用即全部消失，本地仅记录界面偏好�
 
 如果这个小工具帮到了你，可以扫码请师兄喝杯水 —— 你的支持是持续改进的动力：
 
-| 支付宝 | 微信 |
-|--------|------|
-| ![支付宝](src/assets/zhifubao.jpg) | ![微信](src/assets/weixin.png) |
+<table>
+  <tr>
+    <th align="center">支付宝</th>
+    <th align="center">微信</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="src/assets/zhifubao.jpg" width="220" alt="支付宝">
+    </td>
+    <td align="center">
+      <img src="src/assets/weixin.png" width="220" alt="微信">
+    </td>
+  </tr>
+</table>
+
 
 ## 📮 联系
 
