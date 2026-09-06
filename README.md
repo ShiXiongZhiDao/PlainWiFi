@@ -8,7 +8,7 @@
 
  One-click share QR code
 
-[中文](README.zh.md) | **English**
+ **English** | [中文](README.zh.md)
 
 </div>
 
