@@ -64,7 +64,6 @@ jobs:
           }
           $signature = (Get-Content $sig.FullName -Raw).Trim()
 
-          # 从 CHANGELOG.md 提取对应版本的更新内容
           $notes = ""
           if (Test-Path "CHANGELOG.md") {
             $changelog = Get-Content "CHANGELOG.md" -Raw -Encoding utf8
@@ -83,7 +82,7 @@ jobs:
             platforms = [ordered]@{
               "windows-x86_64" = [ordered]@{
                 signature = $signature
-                url       = "https://gitee.com/ShiXiongZhiDao/PlainWiFi/raw/updates/PlainWiFi_${ver}_x64-setup.exe"
+                url       = "https://gitee.com/ShiXiongZhiDao/PlainWiFi/releases/download/${{ github.ref_name }}/PlainWiFi_${ver}_x64-setup.exe"
               }
             }
           }
@@ -107,32 +106,66 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Sync updater package to Gitee
+      - name: Sync Tag & Package to Gitee Release
         shell: pwsh
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           $ErrorActionPreference = "Stop"
           $ver   = "${{ github.ref_name }}".TrimStart("v")
+          $tag   = "${{ github.ref_name }}"
+          $owner = "ShiXiongZhiDao"
+          $repo  = "PlainWiFi"
 
-          # 递归搜索 bundle 目录下的所有 .exe 安装包文件（兼容各种后缀）
+          # 1. 查找生成的安装包
           $exe   = Get-ChildItem -Path . -Recurse -Filter "*.exe" | Where-Object { $_.FullName -like "*bundle*" } | Select-Object -First 1
           if (-not $exe) {
             Write-Host "::error::未能找到安装包文件！"
             exit 1
           }
 
+          # 2. 推送 Tag 到 Gitee
+          $giteeUrl = "https://oauth2:${env:GITEE_TOKEN}@gitee.com/$owner/$repo.git"
+          git push $giteeUrl $tag -f
+
+          # 3. 检查并创建 Gitee Release
+          $headers = @{ "User-Agent" = "PowerShell" }
+          $releasesUrl = "https://gitee.com/api/v5/repos/$owner/$repo/releases?access_token=${env:GITEE_TOKEN}"
+          $existingReleases = Invoke-RestMethod -Uri $releasesUrl -Method Get -Headers $headers
+          $release = $existingReleases | Where-Object { $_.tag_name -eq $tag }
+
+          if (-not $release) {
+            $createReleaseUrl = "https://gitee.com/api/v5/repos/$owner/$repo/releases"
+            $body = @{
+              access_token = $env:GITEE_TOKEN
+              tag_name     = $tag
+              name         = "PlainWiFi $tag"
+              body         = $env:RELEASE_NOTES
+            }
+            $release = Invoke-RestMethod -Uri $createReleaseUrl -Method Post -Body $body
+          }
+
+          # 4. 上传 .exe 文件到 Gitee Release 附件
+          $uploadUrl = "https://gitee.com/api/v5/repos/$owner/$repo/releases/$($release.id)/attach_files"
+          curl.exe -X POST $uploadUrl `
+            -F "access_token=${env:GITEE_TOKEN}" `
+            -F "file=@$($exe.FullName);filename=PlainWiFi_${ver}_x64-setup.exe"
+
+      - name: Sync updater.json to Gitee updates branch
+        shell: pwsh
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
           $gitee = "https://oauth2:${env:GITEE_TOKEN}@gitee.com/ShiXiongZhiDao/PlainWiFi.git"
           git clone --depth 1 $gitee gitee-sync
           cd gitee-sync
           git checkout --orphan updates
           git rm -r --cached . -q
-          Copy-Item $exe.FullName "PlainWiFi_${ver}_x64-setup.exe"
           Copy-Item ../updater.json .
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add PlainWiFi_${ver}_x64-setup.exe updater.json
-          git commit -m "chore(updates): release ${{ github.ref_name }} updater package"
+          git add updater.json
+          git commit -m "chore(updates): release ${{ github.ref_name }} manifest"
           git push -f $gitee updates:updates
 
       - name: Attach updater manifests to GitHub Release
@@ -144,21 +177,12 @@ jobs:
       - name: Sync updater manifest to GitHub updates branch
         shell: pwsh
         run: |
-          # 1. 备份生成好的清单到系统临时目录，避免被 git clean 清理
           Copy-Item updater-github.json "$env:TEMP\updater-github.json" -Force
-
-          # 2. 清理构建产生的脏文件与依赖更改
           git reset --hard
           git clean -fd
-
-          # 3. 切换孤儿分支并清空暂存区
           git checkout --orphan updates-gh
           git rm -r --cached . -q
-
-          # 4. 从临时目录还原清单文件为 updater.json
           Copy-Item "$env:TEMP\updater-github.json" updater.json -Force
-
-          # 5. 提交并强推到 GitHub 的 updates-gh 分支
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f updater.json
