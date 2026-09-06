@@ -5,10 +5,10 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/)，
 版本号遵循 [Semantic Versioning](https://semver.org/)。
 
-## [1.0.4] - 2026-09-05
+## [1.0.5] - 2026-09-05
 
 ### Fixed
-- 版本号修正
+- 修复bug
 
 
 ## [1.0.3] - 2026-09-05
