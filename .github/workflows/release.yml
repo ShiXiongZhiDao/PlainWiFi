@@ -1,34 +1,43 @@
 name: Release & Sync Updater to Gitee
-# 触发：给代码打标（v*）并推送到 GitHub 后自动构建
+
+# 触发条件：给代码打 Tag（如 v1.0.3）并推送到 GitHub 后自动触发构建
 on:
   push:
     tags:
       - "v*"
+
 permissions:
   contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
+
       # 构建 + 签名升级包 + 创建 GitHub Release（附件含 setup.exe）
       - name: Build & GitHub Release
         uses: tauri-apps/tauri-action@v0
@@ -43,12 +52,19 @@ jobs:
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: false # 升级清单由本工作流生成并同步到 Gitee
+
       # 组装 Tauri v2 updater 清单：从 CHANGELOG.md 读取对应版本的更新内容作为 notes
       - name: Assemble updater.json
         shell: pwsh
         run: |
-          $ver  = "${{ github.ref_name }}".TrimStart("v")
-          $sig  = (Get-ChildItem src-tauri/target/release/bundle/nsis/*_setup.exe.sig | Select-Object -First 1)
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+
+          # 递归搜索 .sig 签名文件并增加判空校验
+          $sig = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*.sig" | Select-Object -First 1
+          if (-not $sig) {
+            Write-Error "未能找到 .sig 签名文件！请检查 tauri.conf.json 中是否配置了 'createUpdaterArtifacts': true 且已设置 TAURI_SIGNING_PRIVATE_KEY Secrets。"
+            exit 1
+          }
           $signature = (Get-Content $sig.FullName -Raw).Trim()
 
           # 从 CHANGELOG.md 提取对应版本的更新内容
@@ -88,6 +104,7 @@ jobs:
 
           Get-Content updater.json
           Get-Content updater-github.json
+
       # 用 CHANGELOG 中的真实更新内容覆盖 GitHub Release body
       - name: Update GitHub Release body with CHANGELOG
         shell: pwsh
@@ -96,8 +113,8 @@ jobs:
           gh release edit "${{ github.ref_name }}" --notes-file release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # 同步升级包到 Gitee：updates 分支为纯孤儿分支（每次强推替换），只含 exe + updater.json，
-      # 不污染 master 源码树，且旧版本包不累积仓库体积
+
+      # 同步升级包到 Gitee：updates 分支为纯孤儿分支（每次强推替换），只含 exe + updater.json
       - name: Sync updater package to Gitee
         shell: pwsh
         env:
@@ -105,7 +122,14 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $ver   = "${{ github.ref_name }}".TrimStart("v")
-          $exe   = (Get-ChildItem src-tauri/target/release/bundle/nsis/*_setup.exe | Select-Object -First 1)
+
+          # 递归搜索 exe 文件并增加判空校验
+          $exe   = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*_setup.exe" | Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "未能找到安装包 *_setup.exe 文件！"
+            exit 1
+          }
+
           $gitee = "https://oauth2:${env:GITEE_TOKEN}@gitee.com/ShiXiongZhiDao/PlainWiFi.git"
           git clone --depth 1 $gitee gitee-sync
           cd gitee-sync
@@ -118,14 +142,15 @@ jobs:
           git add PlainWiFi_${ver}_x64-setup.exe updater.json
           git commit -m "chore(updates): release v${{ github.ref_name }} updater package"
           git push -f $gitee updates:updates
-      # 两份清单先挂到 GitHub Release 附件留档（必须在下一步覆盖 updater.json 之前）
+
+      # 两份清单挂载到 GitHub Release 附件留档
       - name: Attach updater manifests to GitHub Release
         shell: pwsh
         run: gh release upload "${{ github.ref_name }}" updater.json updater-github.json --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # GitHub 侧也维护一份 updates 孤儿分支（只放清单，exe 由 GitHub Releases 承载），
-      # 供 tauri.conf.json endpoints 的第二条兜底地址读取
+
+      # GitHub 侧维护 updates-gh 孤儿分支
       - name: Sync updater manifest to GitHub updates branch
         shell: pwsh
         run: |
