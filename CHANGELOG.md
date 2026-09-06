@@ -5,7 +5,7 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/)，
 版本号遵循 [Semantic Versioning](https://semver.org/)。
 
-## [1.0.6] - 2026-09-06
+## [1.0.7] - 2026-09-06
 
 ### Added
 - 更新说明支持 Markdown 渲染（标题/列表/粗斜体/行内代码/链接），并在设置「升级」页新增可回看的版本说明
