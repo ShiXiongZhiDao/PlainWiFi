@@ -61,12 +61,15 @@ Get the latest release from [Releases](https://gitee.com/ShiXiongZhiDao/PlainWiF
 3. Point your phone camera at the QR code → "Join Network" pops up automatically
 4. ⚙ at the bottom-left opens Settings: Theme / Language / Backup / Update / About
 
-![Main interface](assets\screen-main.jpg)
 
-![Main interface](assets\screen-main1.jpg)
+## 截图
 
-![backup](assets\screen-backup.jpg)
-<!-- TODO: replace with an actual screenshot -->
+<img src="assets/screen-main.jpg" alt="Main interface" width="600" />
+
+<img src="assets/screen-main1.jpg" alt="Main interface" width="600" />
+
+<img src="assets/screen-backup.jpg" alt="backup" width="600" />
+
 
 ## 🛠 Build from Source
 

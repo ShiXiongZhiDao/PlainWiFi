@@ -61,12 +61,13 @@
 3. 手机相机对准二维码 → 自动弹出"加入网络"
 4. 左下角 ⚙ 打开设置：主题 / 语言 / 备份 / 升级 / 关于
 
-![主界面](assets\screen-main.jpg)
+## 截图
+<img src="assets/screen-main.jpg" alt="主界面-WiFi列表" width="600" />
 
-![主界面](assets\screen-main1.jpg)
+<img src="assets/screen-main1.jpg" alt="主界面-WiFi详情" width="600" />
 
-![备份](assets\screen-backup.jpg)
-<!-- TODO: 替换为实际截图文件 -->
+<img src="assets/screen-backup.jpg" alt="备份功能" width="600" />
+
 
 ## 🛠 从源码构建
 
