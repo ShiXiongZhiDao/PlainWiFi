@@ -696,6 +696,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import { emit as emitTauriEvent } from '@tauri-apps/api/event'
+import { getVersion } from '@tauri-apps/api/app'
 import QRCode from 'qrcode';
 import { Command } from '@tauri-apps/plugin-shell'
 import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
@@ -903,7 +904,8 @@ const locale = ref<Locale>('zh')
 const t = (key: string): string => translations[locale.value][key] ?? key
 
 // ============ In-app update with user confirmation (tauri-plugin-updater) ============
-const CURRENT_VERSION = '1.0.2'
+// 版本号从 tauri.conf.json 的 app.version 自动读取，不再硬编码
+const CURRENT_VERSION = ref('')
 // 升级清单地址由 tauri.conf.json → plugins.updater.endpoints 配置（check() 在 Rust 侧读取，Gitee 优先、GitHub 兜底）
 const GITEE_REPO_URL = 'https://gitee.com/ShiXiongZhiDao/PlainWiFi'
 const GITHUB_REPO_URL = 'https://github.com/ShiXiongZhiDao/PlainWiFi'
@@ -1533,6 +1535,11 @@ watch(locale, (newValue) => {
 
 // Load user preferences on mount
 onMounted(() => {
+  // 自动读取 tauri.conf.json 中的 app.version，不再硬编码
+  getVersion()
+    .then(v => { CURRENT_VERSION.value = v })
+    .catch(() => { CURRENT_VERSION.value = '0.0.0' })
+
   // getPasswords();
   refreshPasswords();
   // 主题：优先读三态 'theme' 键，兼容旧 'darkMode' 布尔键；默认浅色
