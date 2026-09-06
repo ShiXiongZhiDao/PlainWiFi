@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brutalism Color Palette */
+  --color-brut-yellow: #FFEB00;
+  --color-brut-magenta: #FF5DA2;
+  --color-brut-blue: #4D7CFE;
+  --color-brut-electric: #00E5FF;
+  --color-brut-green: #39FF14;
+  --color-brut-black: #000000;
+  --color-brut-white: #FFFFFF;
+  --color-brut-gray: #F0F0F0;
+  --color-brut-dark-bg: #1A1A1A;
+  --color-brut-dark-card: #2A2A2A;
+
+  /* Brutalism Shadows */
+  --shadow-brut-sm: 2px 2px 0 #000;
+  --shadow-brut-md: 4px 4px 0 #000;
+  --shadow-brut-lg: 6px 6px 0 #000;
+  --shadow-brut-xl: 8px 8px 0 #000;
+
+  /* Brutalism Borders */
+  --border-brut: 3px solid #000;
+
+  /* Font */
+  --font-brut: 'Arial Black', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-brut-mono: 'Courier New', ui-monospace, monospace;
+}
+
+/* Global base styles */
+body {
+  font-family: var(--font-brut);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar Brutalism style */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-brut-gray);
+  border-left: 2px solid var(--color-brut-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-brut-black);
+  border: 2px solid var(--color-brut-gray);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--color-brut-dark-bg);
+  border-left: 2px solid var(--color-brut-white);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-brut-white);
+  border: 2px solid var(--color-brut-dark-bg);
+}

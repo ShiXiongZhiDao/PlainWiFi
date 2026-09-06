@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Signing keys & secrets — never commit (see doc/update-manual.md §6)
+# Updater minisign private key, certificates, tokens, exported credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.sig
+*.kdbx
+.env
+.env.*
+*.token
+secrets*
+credentials*
+.tauri/
+src-tauri/.tauri/

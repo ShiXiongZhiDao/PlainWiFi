@@ -1,0 +1,68 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "PlainWiFi",
+  "version": "1.0.2",
+  "identifier": "com.wifi-viewing.app",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "师兄明码WiFi",
+        "width": 960,
+        "height": 720,
+        "center": true,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://gitee.com/ShiXiongZhiDao/PlainWiFi/raw/updates/updater.json",
+        "https://raw.githubusercontent.com/ShiXiongZhiDao/PlainWiFi/updates/updater.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVGNENBMDQ1OTA1QzBGMTEKUldRUkQxeVFSYUJNNzVuR01oN2s2R05ITkM1Y2dqNW5zd2RLRXhNNjFtMjNoWUJiQXpRdFRvU0kK"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Utilities",
+    "shortDescription": "PlainWiFi",
+    "publisher": "ShiXiongZhiDao",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "displayLanguageSelector": true,
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "languages": ["SimpChinese"],
+        "installMode": "perMachine"
+      }
+    }
+  }
+}

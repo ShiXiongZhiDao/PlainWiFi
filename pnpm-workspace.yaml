@@ -1,0 +1,3 @@
+trustLockfile: true    # 上一轮：跳过 supply-chain 复检（可选）
+allowBuilds:
+  esbuild: true
