@@ -104,9 +104,21 @@ This project is open-sourced under the [MIT License](LICENSE) — free to use, m
 
 If this little tool saved you some time, you can buy the author a coffee — your support keeps the project improving:
 
-| Alipay | WeChat |
-|--------|--------|
-| ![Alipay](src/assets/zhifubao.jpg) | ![WeChat](src/assets/weixin.png) |
+<table>
+  <tr>
+    <th align="center">Alipay</th>
+    <th align="center">WeChat</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="src/assets/zhifubao.jpg" width="220" alt="支付宝">
+    </td>
+    <td align="center">
+      <img src="src/assets/weixin.png" width="220" alt="微信">
+    </td>
+  </tr>
+</table>
+
 
 ## 📮 Contact
 
