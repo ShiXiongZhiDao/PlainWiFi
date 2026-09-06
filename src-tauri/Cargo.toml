@@ -1,6 +1,6 @@
 [package]
 name = "plain_wifi"
-version = "1.0.5"
+version = "1.0.6"
 description = "A fully-local, open-source, zero-upload Windows tool to view saved WiFi passwords and share them via QR code"
 authors = ["师兄知道 | ShiXiongZhiDao"]
 edition = "2021"
