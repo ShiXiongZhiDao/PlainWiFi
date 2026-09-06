@@ -1,8 +1,8 @@
 [package]
-name = "wifi_viewing"
-version = "0.1.0"
-description = "一个查看已连接过WiFi的密码的工具"
-authors = ["师兄知道"]
+name = "plain wifi"
+version = "1.0.3"
+description = "A fully-local, open-source, zero-upload Windows tool to view saved WiFi passwords and share them via QR code"
+authors = ["师兄知道 | ShiXiongZhiDao"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -29,4 +29,3 @@ tauri-plugin-shell = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
-

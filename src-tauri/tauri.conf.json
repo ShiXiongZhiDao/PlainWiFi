@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PlainWiFi",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "identifier": "com.wifi-viewing.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -61,7 +61,8 @@
         "installerIcon": "icons/icon.ico",
         "uninstallerIcon": "icons/icon.ico",
         "languages": ["SimpChinese"],
-        "installMode": "perMachine"
+        "installMode": "perMachine",
+        "startMenuFolder": "师兄知道"
       }
     }
   }
