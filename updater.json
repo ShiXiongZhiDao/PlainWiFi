@@ -1,0 +1,11 @@
+{
+  "version": "1.0.7",
+  "notes": "### Added\r\n- 更新说明支持 Markdown 渲染（标题/列表/粗斜体/行内代码/链接），并在设置「升级」页新增可回看的版本说明\r\n\r\n### Fixed\r\n- 升级弹窗失败态新增「错误详情」\r\n\r\n### Changed\r\n- 发布流水线新增签名配对硬校验",
+  "pub_date": "2026-09-06T15:56:47Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRUkQxeVFSYUJNN3dOYlJyeGNMbUwzL2wvWUxLOHhBd0Z1YkpiLyswWEJUVVFHME80ZmtTbXdzcnowY0MzaVVIS2Mvem5ObUVGYkVUb2dkek9WUE1sb3dyTWd3OGF4ZEE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4NzEwMjAyCWZpbGU6UGxhaW5XaUZpXzEuMC43X3g2NC1zZXR1cC5leGUKZ3g1V3RxNmZVV2l0ekN4MDJLVFhCOVFsMi9jWUtlWk81YUJuYmh0S0pqanFxM2YwWldnTUJSdVV0ZCtLV09UVWFkSG5MWlhHbFZZNGJGTllpMTZmQVE9PQo=",
+      "url": "https://github.com/ShiXiongZhiDao/PlainWiFi/releases/download/v1.0.7/PlainWiFi_1.0.7_x64-setup.exe"
+    }
+  }
+}
