@@ -115,7 +115,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           $ver   = "${{ github.ref_name }}".TrimStart("v")
 
-          # 递归搜索 bundle 目录下的所有 .exe 文件（兼容连字符与下划线命名）
+          # 递归搜索 bundle 目录下的所有 .exe 安装包文件（兼容各种后缀）
           $exe   = Get-ChildItem -Path . -Recurse -Filter "*.exe" | Where-Object { $_.FullName -like "*bundle*" } | Select-Object -First 1
           if (-not $exe) {
             Write-Host "::error::未能找到安装包文件！"
@@ -144,11 +144,21 @@ jobs:
       - name: Sync updater manifest to GitHub updates branch
         shell: pwsh
         run: |
+          # 1. 备份生成好的清单到系统临时目录，避免被 git clean 清理
+          Copy-Item updater-github.json "$env:TEMP\updater-github.json" -Force
+
+          # 2. 清理构建产生的脏文件与依赖更改
           git reset --hard
           git clean -fd
+
+          # 3. 切换孤儿分支并清空暂存区
           git checkout --orphan updates-gh
           git rm -r --cached . -q
-          Copy-Item updater-github.json updater.json -Force
+
+          # 4. 从临时目录还原清单文件为 updater.json
+          Copy-Item "$env:TEMP\updater-github.json" updater.json -Force
+
+          # 5. 提交并强推到 GitHub 的 updates-gh 分支
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f updater.json
