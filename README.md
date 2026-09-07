@@ -125,3 +125,6 @@ If this little tool saved you some time, you can buy the author a coffee — you
 - Author: 师兄知道 (ShiXiongZhiDao)
 - WeChat Official Account: 师兄知道
 - Issues & suggestions: welcome in this repository
+
+
+![Downloads](https://img.shields.io/github/downloads/ShiXiongZhiDao/PlainWiFi/total)
