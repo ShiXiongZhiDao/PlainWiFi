@@ -124,3 +124,7 @@ A：哪里都没有。关闭应用即全部消失，本地仅记录界面偏好�
 - 作者：师兄知道
 - 微信公众号：师兄知道
 - Issue / 建议：欢迎在仓库提出
+
+
+
+![Downloads](https://img.shields.io/github/downloads/ShiXiongZhiDao/PlainWiFi/total)
